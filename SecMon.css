@@ -1,0 +1,57 @@
+/* for Full HD Monitor --- */  
+@media only screen and (min-device-width : 1025px) { 
+}
+
+/* for iPhone & iPad portrait --- */ 
+@media screen and (max-device-width : 1024px) and (orientation:portrait) {
+}
+
+/* for iPhone & iPad landscape --- */  
+@media screen and (max-device-width : 1024px) and (orientation:landscape) {
+}
+   
+/* Common styles --- */ 
+#cont1 {
+	position: relative;
+    width: 100%;
+    margin: 0px auto;
+    background: gray;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.myFieldSet  {
+	width: 90%;
+}
+
+.button {
+    background-color: #4CAF50; /* Green */
+    border: solid 2px red;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 20px;
+    margin: 5px 20px;
+    border-radius: 12px;
+}
+
+.button:hover {background-color: #3e8e41}
+
+.button:active {background-color: #3e8e41}
+
+.cb_lbl {
+	margin-left: 5px;
+	margin-right: 5px;
+}
+
+input[type="checkbox"] {
+  transform:scale(1.5, 1.5);
+}
+
+#renewProgressBar {
+  width: 0%;
+  height: 3px;
+  background-color: lightblue;
+}

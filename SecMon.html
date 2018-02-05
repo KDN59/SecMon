@@ -1,0 +1,225 @@
+<!DOCTYPE HTML>
+  <html>
+  <head>
+   <title>SECURITY SERVER v1.0</title>
+    <meta  charset=utf-8>  
+    <link rel="stylesheet"  href="SecMon.css" type="text/css">
+  </head>
+      
+  <body>
+<div id="cont1" align="center" >
+            <button class="button" onclick="mySpeech()">SECURITY MONITOR v1.0</button>
+<fieldset class="myFieldSet">
+  <legend>Setup areas for control</legend>
+    <input type="checkbox" class="cb_size" id="pir1" onchange="setPir(0,  this.checked)">
+    <label for="pir1" class="cb_lbl">Entrance</label>
+    
+    <input type="checkbox" class="cb_size" id="pir2" onchange="setPir(1,  this.checked)">
+    <label for="pir2" class="cb_lbl">Hall</label>
+    
+    <input type="checkbox" class="cb_size" id="pir3" onchange="setPir(2,  this.checked)">
+    <label for="pir3" class="cb_lbl">BedRoom</label>
+    
+    <input type="checkbox" class="cb_size" id="pir4" onchange="setPir(3,  this.checked)">
+    <label for="pir4" class="cb_lbl">Pool</label>    
+</fieldset>
+
+<fieldset  class="myFieldSet"> 
+  <legend>Current Date and Time</legend>
+  <a id="date" style="font-size: 30px; color: black; float: left; margin-left: 50px;"></a>  
+  <a id="time" style="font-size: 30px; color: black; float: right; margin-right: 50px;"></a>
+</fieldset>
+
+<fieldset  class="myFieldSet"> 
+  <legend>Alarms log</legend>
+  <div id="listOfEvent" align="left"></div>
+ <div id="renewProgressBar" style="margin-bottom: 10px;"></div>
+ <button class="button" onclick="action_pir('clear_log')">Clear</button>
+ <button class="button" onclick="action_pir('getState')">Renew</button>
+ </fieldset>
+    
+    <input type="checkbox" class="cb_size" id="pr_push" style="margin-top: 10px;" onchange="set_pr_push( this.checked)">
+    <label for="pr_push" class="cb_lbl">Enable Push Notification</label>
+    
+       
+<script type='text/javascript'>
+
+var S_pir_buff;
+var zone = {'1': 'Entrance', '2': 'Hall', '3': 'BedRoom', '4': 'Pool'};
+var events_type = {'MD':'Motion detected'};
+var pirState = "00000"; // boolean state of "pir1,pir2,pir3,pir4,msg"
+var prAlarm  = "0000"; //boolean for zone 1-4
+var url_server = "http://192.168.0.185/SecMon.php?req=";
+
+// text-to-speech variable 
+var speech = new SpeechSynthesisUtterance();
+speech.lang = 'ru-RU';
+speech.rate = 0.7;
+speech.pitch = 1;
+speech.volume = 1;
+
+startTime();  
+action_pir("getState");
+action_pir("reqDB");
+renewProgressBar();
+
+function set_pr_push(value) {
+    pirState = pirState.substr(0, 4) + String(Number(value));
+    var setState = 'setState' + pirState;
+    action_pir(setState);
+}
+  
+function setPir(pir_id, value) {
+    pirState = pirState.substr(0, pir_id) + String(Number(value)) + pirState.substr(pir_id + 1);
+    var setState = 'setState' + pirState;
+    action_pir(setState);
+}
+
+function action_pir(action) {
+   var XHR =  window.XMLHttpRequest;
+   var xhr = new XHR();
+   url_pir =  url_server + action;
+   xhr.open('GET', url_pir, true);
+   xhr.onload = function() {
+//    alert(xhr.response);   
+    if (action == 'reqDB') {
+	S_pir_buff = xhr.response.split('\n');
+        S_pir_buff.pop();          	
+        events_list();
+    }
+    else if (action == 'getState') {
+	pirState = xhr.response;
+	document.getElementById("pir1").checked = Boolean(Number(pirState[0]));			   
+	document.getElementById("pir2").checked = Boolean(Number(pirState[1]));			   
+	document.getElementById("pir3").checked = Boolean(Number(pirState[2]));			   
+	document.getElementById("pir4").checked = Boolean(Number(pirState[3]));			   
+	document.getElementById("pr_push").checked = Boolean(Number(pirState[4]));			   
+	}
+   }
+   xhr.onerror = function() {
+	alert("Error");
+   }
+   xhr.send();   		
+}
+
+function events_list() {
+// selects the div with an id of placeholder
+    var div = document.getElementById('listOfEvent');
+// clear list of events
+    while (div.firstChild) {
+    	div.removeChild(div.firstChild);
+    }
+
+    ul = document.createElement('ul'); // create an arbitrary ul element
+    prAlarm = "0000";
+// loop through the events array
+    for(var i=S_pir_buff.length - 1; i >= 0 ; i--) {
+	var zz = S_pir_buff[i].split(' ');
+	var resStr = zz[0] + "\u00A0\u00A0\u00A0" + 
+	             zz[1] + "\u00A0\u00A0\u00A0" + 
+		     zz[2] + "\u00A0\u00A0\u00A0" +
+		     zz[3] + "\u00A0\u00A0\u00A0" +
+		     events_type[zz[4]];
+	
+    // create an arbitrary li element
+	var li = document.createElement('li'),		 
+	content = document.createTextNode(resStr); // create a textnode to the document
+	li.appendChild(content); // append the created textnode above to the li element
+	ul.appendChild(li); // append the created li element above to the ul element
+	var zz = document.getElementsByTagName("li");
+    }
+	div.appendChild(ul); // finally the ul element to the div with an id of placeholder       
+}
+
+function mySpeech(){
+    if (pirState.substr(0, 4) == '0000') {
+	    speech.text  = "Система безопасности полностью отключена ";    	
+    } else if (pirState.substr(0, 4) == '1111') {
+	    speech.text  = "Система безопасности полностью контролирует всее обьекты ";    	
+    } else {
+    	    speech.text  = "Система безопасности докладывает ";
+	    if (pirState[0] == 1) {
+	   	 	speech.text += "Контроль входа ";
+	    }
+	    if (pirState[1] == 1) {
+	    	speech.text += "Контроль холла ";
+	    }
+	    if (pirState[2] == 1) {
+	    	speech.text += "Контроль спальной комнаты ";
+	    }
+	    if (pirState[3] == 1) {
+	    	speech.text += "Контроль зоны бассейна ";
+	    }
+	    	speech.text += " активирован ";
+
+
+	   	if (pirState[0] == 1 && prAlarm[0] == 1) {
+		   	speech.text += " Внимание  Обнаружено движение у входной двери ";	   	 		
+	   	}
+	   	if (pirState[1] == 1 && prAlarm[1] == 1) {
+		    speech.text += " Внимание  Обнаружено движение в холле ";	   	 		
+	   	}
+	   	if (pirState[2] == 1 && prAlarm[2] == 1) {
+		    speech.text += " Внимание  Обнаружено движение в спальне ";	   	 		
+	   	}
+	   	if (pirState[3] == 1 && prAlarm[3] == 1) {
+		    speech.text += " Внимание  Обнаружено движение около бассейна ";	   	 		
+	   	}
+
+	   	if (prAlarm === "0000") {
+		    speech.text += " В Багдаде все спокойно ";	   	 		
+	   	}
+    }
+    speech.text += " Доклад окончен";
+    window.speechSynthesis.speak(speech);
+}
+
+// function to check word in array of string
+function is_in_array(s,your_array) {
+    for (var i = 0; i < your_array.length; i++) {
+        if (your_array[i].indexOf(s) >= 0) return true;
+    }
+    return false;
+}
+    
+function renewProgressBar() {
+  var elem = document.getElementById("renewProgressBar");   
+  var width = 0;
+  var id = setInterval(frame, 100);
+  function frame() {
+    if (width >= 100) {
+       width = 0;
+       action_pir("getState");
+       action_pir("reqDB");       
+    } else {
+      width++; 
+      elem.style.width = width + '%'; 
+    }
+  }
+}
+
+function startTime() {
+    var months = new Array('January', 'February', 'March', 'April', 'May', 'June', 'Jully', 'August', 'September', 'October', 'November', 'December');
+    var days = new Array('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday');
+    var today = new Date();
+    var utcToday = today.toUTCString();
+    
+    var year  = today.getFullYear();
+    var month = today.getMonth();
+    var date  = today.getDate();
+    var day   = today.getDay();
+
+        var h  = today.getHours();
+        if (h < 10) {h = "0" + h};  // add zero in front of numbers < 10
+        var m = today.getMinutes();
+        if (m < 10) {m = "0" + m};  // add zero in front of numbers < 10
+        
+    document.getElementById('date').innerHTML = days[day] + " " + date + " " + months[month] + " " + year;
+    
+    document.getElementById('time').innerHTML = h + ":" + m;	
+    setTimeout(startTime, 10000);
+}
+      
+</script>
+   </body>
+  </html>      
